@@ -1,9 +1,15 @@
 package com.ramimartin.sample.multibluetooth;
 
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -54,6 +60,20 @@ public class MainActivity extends BluetoothFragmentActivity implements Discovere
     Button mDisconnect;
     String macAdress = null;
     private android.os.Handler handler = new android.os.Handler();
+    /*
+    *
+Server API Key help
+AIzaSyBPxOVdAzXoo9UrsuDURmenOqIQG310PLs
+
+Sender ID help
+855804541252*/
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            boolean sentToken = com.ramimartin.sample.multibluetooth.PreferenceManager.instance(getApplicationContext()).sentToken();
+
+        }
+    };
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +89,9 @@ public class MainActivity extends BluetoothFragmentActivity implements Discovere
         mwebview.setWebViewClient(new WebViewClient());
         mwebview.addJavascriptInterface(new AndroidtoJava(),"callAndroidValue");
         mwebview.loadUrl("http://117.16.244.19/");
+        if (checkPlayServices()) {
+            startService(new Intent(this, RegistrationIntentService.class));
+        }
     }
 
     @Override
@@ -227,5 +250,39 @@ public class MainActivity extends BluetoothFragmentActivity implements Discovere
     @Override
     public void onScanClicked() {
         scanAllBluetoothDevice();
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(getString(R.string.action_registration_complete));
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+    }
+
+    /**
+     * Check the device to make sure it has the Google Play Services APK. If
+     * it doesn't, display a dialog that allows users to download the APK from
+     * the Google Play Store or enable it in the device's system settings.
+     */
+    private boolean checkPlayServices() {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(this);
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (apiAvailability.isUserResolvableError(resultCode)) {
+                apiAvailability.getErrorDialog(this, resultCode, PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            } else {
+                Log.i("MainActivity", "This device is not supported.|");
+                finish();
+            }
+            return false;
+        }
+        return true;
     }
 }

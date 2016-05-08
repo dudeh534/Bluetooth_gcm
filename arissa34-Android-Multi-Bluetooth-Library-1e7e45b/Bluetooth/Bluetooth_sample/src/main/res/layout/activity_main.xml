@@ -14,7 +14,6 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/communication"
         android:divider="@android:color/transparent"
-        android:layout_below="@+id/webView"
         android:visibility="gone">
 
     </ListView>
